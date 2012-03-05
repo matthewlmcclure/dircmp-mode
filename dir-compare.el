@@ -34,14 +34,25 @@
 
 ; (define-key dir-compare-mode-map "\C-c\C-e" 'dir-compare-do-ediff)
 
+(defvar rsync-output-buffer " *dir-compare-rsync")
+
+(defvar comparison-view-buffer "*Dir-Compare*")
+
 (defun compare-dirs (dir1 dir2)
   (interactive "Dleft directory: \nDright directory: ")
   (shell-command
-   (format "rsync -nirlptgoD --delete '%s' '%s'" (normalize-dir-string dir1) (normalize-dir-string dir2)))
-  )
+   (format "rsync -nirlptgoD --delete '%s' '%s'" (normalize-dir-string dir1) (normalize-dir-string dir2))
+   rsync-output-buffer)
+  (update-comparison-view))
 
 (defun normalize-dir-string (dir)
-  (file-name-as-directory (expand-file-name dir))
-  )
+  (file-name-as-directory (expand-file-name dir)))
+
+(defun update-comparison-view ()
+  (set-buffer rsync-output-buffer)
+  (let ((rsync-output (buffer-string)))
+    (switch-to-buffer comparison-view-buffer)
+    (erase-buffer)
+    (insert rsync-output)))
 
 (provide 'dir-compare-mode)
