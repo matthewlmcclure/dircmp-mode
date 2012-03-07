@@ -32,7 +32,7 @@
 \\{dir-compare-mode-map}"
   nil)
 
-; (define-key dir-compare-mode-map "\C-c\C-e" 'dir-compare-do-ediff)
+(define-key dir-compare-mode-map "\C-m" 'dir-compare-do-ediff)
 
 (defvar rsync-output-buffer " *dir-compare-rsync")
 
@@ -40,19 +40,41 @@
 
 (defun compare-dirs (dir1 dir2)
   (interactive "Dleft directory: \nDright directory: ")
-  (shell-command
-   (format "rsync -nirlptgoD --delete '%s' '%s'" (normalize-dir-string dir1) (normalize-dir-string dir2))
-   rsync-output-buffer)
-  (update-comparison-view))
+  (get-buffer-create rsync-output-buffer)
+  (set-buffer rsync-output-buffer)
+  (erase-buffer)
+  (let ((normalized-dir1 (normalize-dir-string dir1))
+        (normalized-dir2 (normalize-dir-string dir2)))
+    (call-process-shell-command
+     (format "rsync -nirlptgoD --delete '%s' '%s'" normalized-dir1 normalized-dir2)
+     nil rsync-output-buffer)
+    (update-comparison-view normalized-dir1 normalized-dir2)))
 
 (defun normalize-dir-string (dir)
   (file-name-as-directory (expand-file-name dir)))
 
-(defun update-comparison-view ()
+(defun update-comparison-view (&optional dir1 dir2)
   (set-buffer rsync-output-buffer)
+  (get-buffer-create comparison-view-buffer)
   (let ((rsync-output (buffer-string)))
     (switch-to-buffer comparison-view-buffer)
+    (set 'buffer-read-only nil)
     (erase-buffer)
-    (insert rsync-output)))
+    (insert rsync-output)
+    (dir-compare-mode)
+    (set 'buffer-read-only t)
+    (if dir1 (set (make-local-variable 'left-dir) dir1))
+    (if dir2 (set (make-local-variable 'right-dir) dir2))))
+
+(defun dir-compare-do-ediff ()
+  (interactive)
+  (let* ((file-A (concat left-dir (file-on-current-line)))
+         (file-B (concat right-dir (file-on-current-line)))
+         (buf-A (or (get-file-buffer file-A) (find-file-noselect file-A)))
+         (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
+    (ediff-buffers buf-A buf-B)))
+
+(defun file-on-current-line ()
+  (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position)))
 
 (provide 'dir-compare-mode)
