@@ -38,22 +38,6 @@
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "p" 'previous-line)
 
-(defun dircmp-do-sync-left-to-right ()
-  (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
-                         (directory-file-name (left-on-current-view-line))
-                         (file-name-directory (directory-file-name (right-on-current-view-line))))))
-    (call-process-shell-command command))
-  (compare-dirs left-dir right-dir))
-
-(defun dircmp-do-sync-right-to-left ()
-  (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
-                         (directory-file-name (right-on-current-view-line))
-                         (file-name-directory (directory-file-name (left-on-current-view-line))))))
-    (call-process-shell-command command))
-  (compare-dirs left-dir right-dir))
-
 (defvar rsync-output-buffer " *dircmp-rsync*")
 (defvar comparison-view-buffer "*DirCmp*")
 
@@ -97,11 +81,21 @@
          (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
     (ediff-buffers buf-A buf-B)))
 
-(defun left-on-current-view-line ()
-  (concat left-dir (file-on-current-view-line)))
+(defun dircmp-do-sync-left-to-right ()
+  (interactive)
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
+                         (directory-file-name (left-on-current-view-line))
+                         (file-name-directory (directory-file-name (right-on-current-view-line))))))
+    (call-process-shell-command command))
+  (compare-dirs left-dir right-dir))
 
-(defun right-on-current-view-line ()
-  (concat right-dir (file-on-current-view-line)))
+(defun dircmp-do-sync-right-to-left ()
+  (interactive)
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
+                         (directory-file-name (right-on-current-view-line))
+                         (file-name-directory (directory-file-name (left-on-current-view-line))))))
+    (call-process-shell-command command))
+  (compare-dirs left-dir right-dir))
 
 (defun file-on-current-raw-line ()
   (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position)))
@@ -111,6 +105,12 @@
 
 (defun file-on-current-view-line ()
   (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position)))
+
+(defun left-on-current-view-line ()
+  (concat left-dir (file-on-current-view-line)))
+
+(defun right-on-current-view-line ()
+  (concat right-dir (file-on-current-view-line)))
 
 (defun format-rsync-output (rsync-output)
   (progn
