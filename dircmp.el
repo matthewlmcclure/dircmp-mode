@@ -1,4 +1,4 @@
-;;; diff-ediff.el --- navigate diff files with Ediff
+;;; dircmp-mode.el --- Compare and sync directories.
 
 ;; Copyright (C) 2012 Matt McClure
 
