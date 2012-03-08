@@ -35,6 +35,7 @@
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
 (define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
 (define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
+(define-key dircmp-mode-map "g" 'recompare-dirs)
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "p" 'previous-line)
 
@@ -43,11 +44,17 @@
 
 (defun compare-dirs (dir1 dir2)
   (interactive "Dleft directory: \nDright directory: ")
+  (recompare-dirs dir1 dir2))
+
+(defun recompare-dirs (&optional dir1 dir2)
+  (interactive)
   (get-buffer-create rsync-output-buffer)
   (set-buffer rsync-output-buffer)
   (erase-buffer)
-  (let ((normalized-dir1 (normalize-dir-string dir1))
-        (normalized-dir2 (normalize-dir-string dir2)))
+  (let ((normalized-dir1 (if dir1 (normalize-dir-string dir1) left-dir))
+        (normalized-dir2 (if dir2 (normalize-dir-string dir2) right-dir)))
+    (set (make-local-variable 'left-dir) normalized-dir1)
+    (set (make-local-variable 'right-dir) normalized-dir2)
     (call-process-shell-command
      (format "rsync -nirlptgoD --delete '%s' '%s'" normalized-dir1 normalized-dir2)
      nil rsync-output-buffer)
@@ -69,8 +76,6 @@
       (switch-to-buffer comparison-view-buffer)
       (dircmp-mode)
       (set 'buffer-read-only t)
-      (if dir1 (set (make-local-variable 'left-dir) dir1))
-      (if dir2 (set (make-local-variable 'right-dir) dir2))
       (goto-char (point-min)) (forward-line (- line 1)))))
 
 (defun dircmp-do-ediff ()
@@ -87,7 +92,7 @@
                          (directory-file-name (left-on-current-view-line))
                          (file-name-directory (directory-file-name (right-on-current-view-line))))))
     (call-process-shell-command command))
-  (compare-dirs left-dir right-dir))
+  (recompare-dirs))
 
 (defun dircmp-do-sync-right-to-left ()
   (interactive)
@@ -95,22 +100,32 @@
                          (directory-file-name (right-on-current-view-line))
                          (file-name-directory (directory-file-name (left-on-current-view-line))))))
     (call-process-shell-command command))
-  (compare-dirs left-dir right-dir))
+  (recompare-dirs))
 
 (defun file-on-current-raw-line ()
-  (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position)))
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position))))
 
 (defun comparison-on-current-raw-line ()
-  (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) 9)))
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) 9))))
 
 (defun file-on-current-view-line ()
-  (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position)))
+  (save-excursion
+    (switch-to-buffer comparison-view-buffer)
+    (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position))))
 
 (defun left-on-current-view-line ()
-  (concat left-dir (file-on-current-view-line)))
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (concat left-dir (file-on-current-view-line))))
 
 (defun right-on-current-view-line ()
-  (concat right-dir (file-on-current-view-line)))
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (concat right-dir (file-on-current-view-line))))
 
 (defun format-rsync-output (rsync-output)
   (progn
