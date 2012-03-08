@@ -30,11 +30,13 @@
   fundamental-mode "DirCmp"
   "Major mode for comparing and syncing two directories.
 \\{dircmp-mode-map}"
-  nil)
+  (setq goal-column 20))
 
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
 (define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
 (define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
+(define-key dircmp-mode-map "n" 'next-line)
+(define-key dircmp-mode-map "p" 'previous-line)
 
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
