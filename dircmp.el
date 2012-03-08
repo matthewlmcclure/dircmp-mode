@@ -38,13 +38,17 @@
 
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'" (left-on-current-view-line) (right-on-current-view-line))))
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
+                         (directory-file-name (left-on-current-view-line))
+                         (file-name-directory (directory-file-name (right-on-current-view-line))))))
     (call-process-shell-command command))
   (compare-dirs left-dir right-dir))
 
 (defun dircmp-do-sync-right-to-left ()
   (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'" (right-on-current-view-line) (left-on-current-view-line))))
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
+                         (directory-file-name (right-on-current-view-line))
+                         (file-name-directory (directory-file-name (left-on-current-view-line))))))
     (call-process-shell-command command))
   (compare-dirs left-dir right-dir))
 
