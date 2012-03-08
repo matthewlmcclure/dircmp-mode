@@ -33,9 +33,22 @@
   nil)
 
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
+(define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
+(define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
+
+(defun dircmp-do-sync-left-to-right ()
+  (interactive)
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'" (left-on-current-view-line) (right-on-current-view-line))))
+    (call-process-shell-command command))
+  (compare-dirs left-dir right-dir))
+
+(defun dircmp-do-sync-right-to-left ()
+  (interactive)
+  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'" (right-on-current-view-line) (left-on-current-view-line))))
+    (call-process-shell-command command))
+  (compare-dirs left-dir right-dir))
 
 (defvar rsync-output-buffer " *dircmp-rsync*")
-
 (defvar comparison-view-buffer "*DirCmp*")
 
 (defun compare-dirs (dir1 dir2)
@@ -70,11 +83,17 @@
 
 (defun dircmp-do-ediff ()
   (interactive)
-  (let* ((file-A (concat left-dir (file-on-current-view-line)))
-         (file-B (concat right-dir (file-on-current-view-line)))
+  (let* ((file-A (left-on-current-view-line))
+         (file-B (right-on-current-view-line))
          (buf-A (or (get-file-buffer file-A) (find-file-noselect file-A)))
          (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
     (ediff-buffers buf-A buf-B)))
+
+(defun left-on-current-view-line ()
+  (concat left-dir (file-on-current-view-line)))
+
+(defun right-on-current-view-line ()
+  (concat right-dir (file-on-current-view-line)))
 
 (defun file-on-current-raw-line ()
   (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position)))
