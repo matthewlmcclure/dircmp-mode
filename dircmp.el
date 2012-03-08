@@ -125,6 +125,8 @@
          "left only")
         ((string-equal "s" (substring raw-comparison 3 4))
          "content differs")
+        ((string-equal "t" (substring raw-comparison 4 5))
+         "timestamps differ")
         ((string-equal "." (substring raw-comparison 0 1))
          "equal")
         (t raw-comparison)
