@@ -30,7 +30,7 @@
   fundamental-mode "DirCmp"
   "Major mode for comparing and syncing two directories.
 \\{dircmp-mode-map}"
-  (setq goal-column 20))
+  (setq goal-column 7))
 
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
 (define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
@@ -71,9 +71,18 @@
     (let ((line (line-number-at-pos)))
       (set 'buffer-read-only nil)
       (erase-buffer)
-      (insert (format "Directory comparison: %s | %s\n\n" dir1 dir2))
+      (insert (format "Directory comparison:\n\n Left: %s\nRight: %s\n\n" dir1 dir2))
       (format-rsync-output rsync-output)
       (switch-to-buffer comparison-view-buffer)
+      (insert """
+Key:
+    .: equivalent
+    c: content differs
+    t: timestamps differ
+    p: permissions differ
+    o: owner differs
+    g: group differs
+""")
       (dircmp-mode)
       (set 'buffer-read-only t)
       (goto-char (point-min)) (forward-line (- line 1)))))
@@ -115,7 +124,7 @@
 (defun file-on-current-view-line ()
   (save-excursion
     (switch-to-buffer comparison-view-buffer)
-    (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position))))
+    (buffer-substring-no-properties (+ (line-beginning-position) 7) (line-end-position))))
 
 (defun left-on-current-view-line ()
   (save-excursion
@@ -135,32 +144,22 @@
       (let ((raw-comparison (comparison-on-current-raw-line))
             (file (file-on-current-raw-line)))
         (switch-to-buffer comparison-view-buffer)
-        (insert (format "%19s %s\n" (format-comparison raw-comparison) file))
+        (insert (format "%6s %s\n" (format-comparison raw-comparison) file))
         (switch-to-buffer rsync-output-buffer)
         (forward-line)))))
 
 (defun format-comparison (raw-comparison)
   (cond ((string-match "^\*deleting" raw-comparison)
-         "right only")
+         "<<<<<<")
         ((string-equal ">f+++++++" raw-comparison)
-         "left only")
+         ">>>>>>")
         ((string-equal "c" (substring raw-comparison 0 1))
-         "left only")
-        ((string-equal "c" (substring raw-comparison 2 3))
-         "content differs")
-        ((string-equal "s" (substring raw-comparison 3 4))
-         "content differs")
-        ((string-equal "t" (substring raw-comparison 4 5))
-         "timestamps differ")
-        ((string-equal "p" (substring raw-comparison 5 6))
-         "permissions differ")
-        ((string-equal "o" (substring raw-comparison 6 7))
-         "owner differs")
-        ((string-equal "g" (substring raw-comparison 7 8))
-         "group differs")
-        ((string-equal "." (substring raw-comparison 0 1))
-         "equal")
-        (t raw-comparison)
+         ">>>>>>")
+        ((or (string-equal "c" (substring raw-comparison 2 3))
+             (string-equal "s" (substring raw-comparison 3 4)))
+         (concat "c" (substring raw-comparison 4 8)))
+        (t
+         (concat (substring raw-comparison 2 3) (substring raw-comparison 4 8)))
         ))
 
 (provide 'dircmp-mode)
