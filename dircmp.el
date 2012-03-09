@@ -82,15 +82,26 @@
         (get-buffer-create diff-output-buffer)
         (set-buffer diff-output-buffer)
         (erase-buffer)
-        (switch-to-buffer rsync-output-buffer)
+        (set-buffer rsync-output-buffer)
         (goto-char (point-min))
-        (while (> (- (line-end-position) (line-beginning-position)) 10)
-          (if (or (string-equal "c" (substring (comparison-on-current-rsync-line) 2 3))
-                  (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4)))
-              (call-process-shell-command
-               (format "diff -q -s -w '%s' '%s'" (left-on-current-rsync-line) (right-on-current-rsync-line))
-               nil diff-output-buffer))
-          (forward-line)))))
+        (let ((lines (count-lines (point-min) (point-max))))
+          (while (<= (line-number-at-pos) lines)
+            (if (or (string-equal "c" (substring (comparison-on-current-rsync-line) 2 3))
+                    (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4)))
+                (progn
+                  (set-buffer diff-output-buffer)
+                  (erase-buffer)
+                  (call-process-shell-command
+                   (format "diff -q -s -w '%s' '%s'" (left-on-current-rsync-line) (right-on-current-rsync-line))
+                   nil diff-output-buffer)
+                  (if (re-search-backward " are identical\n" nil t)
+                      (progn
+                        (set-buffer rsync-output-buffer)
+                        (goto-char (+ (line-beginning-position) 2))
+                        (delete-char 2)
+                        (insert "..")))))
+            (set-buffer rsync-output-buffer)
+            (forward-line))))))
 
 (defun normalize-dir-string (dir)
   (file-name-as-directory (expand-file-name dir)))
@@ -170,7 +181,7 @@
     (concat right-dir (file-on-current-view-line))))
 
 (defun format-rsync-output (rsync-output)
-  (progn
+  (save-excursion
     (switch-to-buffer rsync-output-buffer)
     (goto-char (point-min))
     (while (> (- (line-end-position) (line-beginning-position)) 10)
