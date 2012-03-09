@@ -30,7 +30,7 @@
   fundamental-mode "DirCmp"
   "Major mode for comparing and syncing two directories.
 \\{dircmp-mode-map}"
-  (setq goal-column 20))
+  (setq goal-column 7))
 
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
 (define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
@@ -42,17 +42,19 @@
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
-(defvar dircmp-compare-recursive t)
-(defvar dircmp-compare-links t)
-(defvar dircmp-compare-permissions t)
-(defvar dircmp-compare-times t)
-(defvar dircmp-compare-group t)
-(defvar dircmp-compare-owner t)
-(defvar dircmp-compare-devices-and-specials t)
-(defvar dircmp-compare-content nil)
-(defvar dircmp-ignore-whitespace-differences nil)
-
-;;; Idea: Optionally use custom comparators by file type. E.g., DOM comparison for XML.
+(defcustom dircmp-compare-recursive t "Compare directories recursively")
+(defcustom dircmp-preserve-symlinks t "Preserve symlinks when syncing")
+(defcustom dircmp-compare-permissions t "Compare permissions")
+(defcustom dircmp-compare-times t "Compare times")
+(defcustom dircmp-compare-group t "Compare groups")
+(defcustom dircmp-compare-owner t "Compare owners")
+(defcustom dircmp-preserve-devices-and-specials t "Preserve device files and special files")
+(defcustom dircmp-compare-content "size" "Method for comparing file content"
+  :type '(choice (const "size")
+                 (const "checksum")
+                 (const "byte by byte")
+                 (const "ignore whitespace differences")
+                 (const "by file type")))
 
 (defun compare-dirs (dir1 dir2)
   (interactive "DLeft directory: \nDRight directory: ")
@@ -77,7 +79,7 @@
    nil rsync-output-buffer))
 
 (defun refine-comparison-with-diff ()
-  (if dircmp-ignore-whitespace-differences
+  (if (equal dircmp-compare-content "ignore whitespace differences")
       (save-excursion
         (get-buffer-create diff-output-buffer)
         (set-buffer diff-output-buffer)
@@ -117,6 +119,15 @@
       (insert (format "Directory comparison:\n\n Left: %s\nRight: %s\n\n" dir1 dir2))
       (format-rsync-output rsync-output)
       (switch-to-buffer comparison-view-buffer)
+      (insert """
+Key:
+    .: equivalent
+    c: content differs
+    t: timestamps differ
+    p: permissions differ
+    o: owner differs
+    g: group differs
+""")
       (dircmp-mode)
       (set 'buffer-read-only t)
       (goto-char (point-min)) (forward-line (- line 1)))))
@@ -158,7 +169,7 @@
 (defun file-on-current-view-line ()
   (save-excursion
     (switch-to-buffer comparison-view-buffer)
-    (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position))))
+    (buffer-substring-no-properties (+ (line-beginning-position) 7) (line-end-position))))
 
 (defun left-on-current-rsync-line ()
   (save-excursion
@@ -181,39 +192,29 @@
     (concat right-dir (file-on-current-view-line))))
 
 (defun format-rsync-output (rsync-output)
-  (save-excursion
+  (progn
     (switch-to-buffer rsync-output-buffer)
     (goto-char (point-min))
     (while (> (- (line-end-position) (line-beginning-position)) 10)
       (let ((rsync-comparison (comparison-on-current-rsync-line))
             (file (file-on-current-rsync-line)))
         (switch-to-buffer comparison-view-buffer)
-        (insert (format "%19s %s\n" (format-comparison rsync-comparison) file))
+        (insert (format "%6s %s\n" (format-comparison rsync-comparison) file))
         (switch-to-buffer rsync-output-buffer)
         (forward-line)))))
 
 (defun format-comparison (rsync-comparison)
   (cond ((string-match "^\*deleting" rsync-comparison)
-         "right only")
+         "<<<<<<")
         ((string-equal ">f+++++++" rsync-comparison)
-         "left only")
+         ">>>>>>")
         ((string-equal "c" (substring rsync-comparison 0 1))
-         "left only")
-        ((string-equal "c" (substring rsync-comparison 2 3))
-         "content differs")
-        ((string-equal "s" (substring rsync-comparison 3 4))
-         "size differs")
-        ((string-equal "t" (substring rsync-comparison 4 5))
-         "timestamps differ")
-        ((string-equal "p" (substring rsync-comparison 5 6))
-         "permissions differ")
-        ((string-equal "o" (substring rsync-comparison 6 7))
-         "owner differs")
-        ((string-equal "g" (substring rsync-comparison 7 8))
-         "group differs")
-        ((string-equal "." (substring rsync-comparison 0 1))
-         "equivalent")
-        (t rsync-comparison)
+         ">>>>>>")
+        ((or (string-equal "c" (substring rsync-comparison 2 3))
+             (string-equal "s" (substring rsync-comparison 3 4)))
+         (concat "c" (substring rsync-comparison 4 8)))
+        (t
+         (concat (substring rsync-comparison 2 3) (substring rsync-comparison 4 8)))
         ))
 
 (provide 'dircmp-mode)
