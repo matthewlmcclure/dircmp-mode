@@ -39,11 +39,23 @@
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "p" 'previous-line)
 
-(defvar rsync-output-buffer " *dircmp-rsync*")
+(defvar rsync-output-buffer " *dircmp-rsync-output*")
+(defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
+(defvar dircmp-compare-recursive t)
+(defvar dircmp-compare-links t)
+(defvar dircmp-compare-permissions t)
+(defvar dircmp-compare-times t)
+(defvar dircmp-compare-group t)
+(defvar dircmp-compare-owner t)
+(defvar dircmp-compare-devices-and-specials t)
+(defvar dircmp-compare-content nil)
+(defvar dircmp-ignore-whitespace-differences nil)
+
+;;; Idea: Optionally use custom comparators by file type. E.g., DOM comparison for XML.
 
 (defun compare-dirs (dir1 dir2)
-  (interactive "Dleft directory: \nDright directory: ")
+  (interactive "DLeft directory: \nDRight directory: ")
   (recompare-dirs dir1 dir2))
 
 (defun recompare-dirs (&optional dir1 dir2)
@@ -55,10 +67,30 @@
         (normalized-dir2 (if dir2 (normalize-dir-string dir2) right-dir)))
     (set (make-local-variable 'left-dir) normalized-dir1)
     (set (make-local-variable 'right-dir) normalized-dir2)
-    (call-process-shell-command
-     (format "rsync -nirlptgoD --delete '%s' '%s'" normalized-dir1 normalized-dir2)
-     nil rsync-output-buffer)
-    (update-comparison-view normalized-dir1 normalized-dir2)))
+    (compare-with-rsync left-dir right-dir)
+    (refine-comparison-with-diff)
+    (update-comparison-view left-dir right-dir)))
+
+(defun compare-with-rsync (dir1 dir2)
+  (call-process-shell-command
+   (format "rsync -nirlptgoD --delete '%s' '%s'" dir1 dir2)
+   nil rsync-output-buffer))
+
+(defun refine-comparison-with-diff ()
+  (if dircmp-ignore-whitespace-differences
+      (save-excursion
+        (get-buffer-create diff-output-buffer)
+        (set-buffer diff-output-buffer)
+        (erase-buffer)
+        (switch-to-buffer rsync-output-buffer)
+        (goto-char (point-min))
+        (while (> (- (line-end-position) (line-beginning-position)) 10)
+          (if (or (string-equal "c" (substring (comparison-on-current-rsync-line) 2 3))
+                  (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4)))
+              (call-process-shell-command
+               (format "diff -q -s -w '%s' '%s'" (left-on-current-rsync-line) (right-on-current-rsync-line))
+               nil diff-output-buffer))
+          (forward-line)))))
 
 (defun normalize-dir-string (dir)
   (file-name-as-directory (expand-file-name dir)))
@@ -71,7 +103,7 @@
     (let ((line (line-number-at-pos)))
       (set 'buffer-read-only nil)
       (erase-buffer)
-      (insert (format "Directory comparison: %s | %s\n\n" dir1 dir2))
+      (insert (format "Directory comparison:\n\n Left: %s\nRight: %s\n\n" dir1 dir2))
       (format-rsync-output rsync-output)
       (switch-to-buffer comparison-view-buffer)
       (dircmp-mode)
@@ -102,12 +134,12 @@
     (call-process-shell-command command))
   (recompare-dirs))
 
-(defun file-on-current-raw-line ()
+(defun file-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
     (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position))))
 
-(defun comparison-on-current-raw-line ()
+(defun comparison-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
     (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) 9))))
@@ -116,6 +148,16 @@
   (save-excursion
     (switch-to-buffer comparison-view-buffer)
     (buffer-substring-no-properties (+ (line-beginning-position) 20) (line-end-position))))
+
+(defun left-on-current-rsync-line ()
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (concat left-dir (file-on-current-rsync-line))))
+
+(defun right-on-current-rsync-line ()
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (concat right-dir (file-on-current-rsync-line))))
 
 (defun left-on-current-view-line ()
   (save-excursion
@@ -132,35 +174,35 @@
     (switch-to-buffer rsync-output-buffer)
     (goto-char (point-min))
     (while (> (- (line-end-position) (line-beginning-position)) 10)
-      (let ((raw-comparison (comparison-on-current-raw-line))
-            (file (file-on-current-raw-line)))
+      (let ((rsync-comparison (comparison-on-current-rsync-line))
+            (file (file-on-current-rsync-line)))
         (switch-to-buffer comparison-view-buffer)
-        (insert (format "%19s %s\n" (format-comparison raw-comparison) file))
+        (insert (format "%19s %s\n" (format-comparison rsync-comparison) file))
         (switch-to-buffer rsync-output-buffer)
         (forward-line)))))
 
-(defun format-comparison (raw-comparison)
-  (cond ((string-match "^\*deleting" raw-comparison)
+(defun format-comparison (rsync-comparison)
+  (cond ((string-match "^\*deleting" rsync-comparison)
          "right only")
-        ((string-equal ">f+++++++" raw-comparison)
+        ((string-equal ">f+++++++" rsync-comparison)
          "left only")
-        ((string-equal "c" (substring raw-comparison 0 1))
+        ((string-equal "c" (substring rsync-comparison 0 1))
          "left only")
-        ((string-equal "c" (substring raw-comparison 2 3))
+        ((string-equal "c" (substring rsync-comparison 2 3))
          "content differs")
-        ((string-equal "s" (substring raw-comparison 3 4))
-         "content differs")
-        ((string-equal "t" (substring raw-comparison 4 5))
+        ((string-equal "s" (substring rsync-comparison 3 4))
+         "size differs")
+        ((string-equal "t" (substring rsync-comparison 4 5))
          "timestamps differ")
-        ((string-equal "p" (substring raw-comparison 5 6))
+        ((string-equal "p" (substring rsync-comparison 5 6))
          "permissions differ")
-        ((string-equal "o" (substring raw-comparison 6 7))
+        ((string-equal "o" (substring rsync-comparison 6 7))
          "owner differs")
-        ((string-equal "g" (substring raw-comparison 7 8))
+        ((string-equal "g" (substring rsync-comparison 7 8))
          "group differs")
-        ((string-equal "." (substring raw-comparison 0 1))
-         "equal")
-        (t raw-comparison)
+        ((string-equal "." (substring rsync-comparison 0 1))
+         "equivalent")
+        (t rsync-comparison)
         ))
 
 (provide 'dircmp-mode)
