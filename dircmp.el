@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2012 Matt McClure
 
-;; Author: Matt McClure
+;; Author: Matt McClure -- http://matthewlmcclure.com
 ;; Keywords: unix, tools
 
 ;; dircmp-mode is free software: you can redistribute it and/or modify
