@@ -116,9 +116,9 @@
 (defcustom dircmp-compare-content "size" "Method for comparing file content"
   :type '(choice (const "size")
                  (const "checksum")
-                 (const "byte by byte")
+                 (const "byte by byte") ; unimplemented
                  (const "ignore whitespace")
-                 (const "by file type")))
+                 (const "by file type"))) ; unimplemented
 (make-variable-buffer-local 'dircmp-compare-content)
 (defun set-compare-content (method)
   (interactive "sCompare file content using: \n")
