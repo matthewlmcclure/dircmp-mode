@@ -116,9 +116,10 @@
 (defcustom dircmp-compare-content "size" "Method for comparing file content"
   :type '(choice (const "size")
                  (const "checksum")
-                 (const "byte by byte") ; unimplemented
+                 (const "byte by byte")
                  (const "ignore whitespace")
-                 (const "by file type"))) ; unimplemented
+                 ;; (const "by file type") ; unimplemented
+                 ))
 (make-variable-buffer-local 'dircmp-compare-content)
 (defun set-compare-content (method)
   (interactive "sCompare file content using: \n")
@@ -142,6 +143,7 @@
     (set (make-local-variable 'left-dir) normalized-dir1)
     (set (make-local-variable 'right-dir) normalized-dir2)
     (compare-with-rsync left-dir right-dir)
+    (refine-comparison-byte-by-byte)
     (refine-comparison-with-diff)
     (update-comparison-view left-dir right-dir)))
 
@@ -154,7 +156,8 @@
   (with-current-buffer comparison-view-buffer
     (concat
      "-ni"
-     (if dircmp-show-equivalent "i")
+     (if (or dircmp-show-equivalent
+             (equal dircmp-compare-content "byte by byte")) "i")
      (if dircmp-compare-recursively "r") 
      (if (equal dircmp-compare-content "checksum") "c")
      (if dircmp-preserve-symlinks "l")
@@ -165,6 +168,29 @@
      (if dircmp-preserve-devices-and-specials "D")
      (if (not dircmp-include-present-only-on-left) " --existing")
      (if dircmp-include-present-only-on-right " --delete"))))
+
+(defun refine-comparison-byte-by-byte ()
+  (if (equal (with-current-buffer comparison-view-buffer dircmp-compare-content) "byte by byte")
+      (save-excursion
+        (set-buffer rsync-output-buffer)
+        (goto-char (point-min))
+        (let ((lines (count-lines (point-min) (point-max))))
+          (while (<= (line-number-at-pos) lines)
+            (progn
+              (if (and
+                   (string-equal "f" (substring (comparison-on-current-rsync-line) 1 2))
+                   (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
+                   (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
+                  (let ((equivalent
+                         (equal 0 (call-process-shell-command
+                                   (format "cmp -s '%s' '%s'"
+                                           (left-on-current-rsync-line) (right-on-current-rsync-line))))))
+                    (if (not equivalent)
+                        (progn
+                          (goto-char (+ (line-beginning-position) 2))
+                          (delete-char 2)
+                          (insert "c.")))))
+              (forward-line)))))))
 
 (defun refine-comparison-with-diff ()
   (if (equal (with-current-buffer comparison-view-buffer dircmp-compare-content) "ignore whitespace")
@@ -285,12 +311,19 @@ Key:
     (switch-to-buffer rsync-output-buffer)
     (goto-char (point-min))
     (while (> (- (line-end-position) (line-beginning-position)) 10)
-      (let ((rsync-comparison (comparison-on-current-rsync-line))
+      (let ((formatted-comparison (format-comparison (comparison-on-current-rsync-line)))
             (file (file-on-current-rsync-line)))
-        (switch-to-buffer comparison-view-buffer)
-        (insert (format "%6s %s\n" (format-comparison rsync-comparison) file))
-        (switch-to-buffer rsync-output-buffer)
+        (if (or
+             dircmp-show-equivalent
+             (not (equivalent formatted-comparison)))
+            (progn
+              (switch-to-buffer comparison-view-buffer)
+              (insert (format "%6s %s\n" formatted-comparison file))
+              (switch-to-buffer rsync-output-buffer)))
         (forward-line)))))
+
+(defun equivalent (formatted-comparison)
+  (not (string-match "[a-z]" formatted-comparison)))
 
 (defun format-comparison (rsync-comparison)
   (cond ((string-match "^\*deleting" rsync-comparison)
