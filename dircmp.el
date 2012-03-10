@@ -48,6 +48,7 @@
 (define-key dircmp-mode-map "r" 'toggle-include-present-only-on-right)
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
+(define-key dircmp-mode-map "c" 'set-compare-content)
 
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
@@ -116,9 +117,13 @@
   :type '(choice (const "size")
                  (const "checksum")
                  (const "byte by byte")
-                 (const "ignore whitespace differences")
+                 (const "ignore whitespace")
                  (const "by file type")))
 (make-variable-buffer-local 'dircmp-compare-content)
+(defun set-compare-content (method)
+  (interactive "sCompare file content using: \n")
+  (with-current-buffer comparison-view-buffer
+    (set-variable 'dircmp-compare-content method)))
 
 (defun compare-dirs (dir1 dir2)
   (interactive "DLeft directory: \nDRight directory: ")
@@ -162,8 +167,9 @@
      (if dircmp-include-present-only-on-right " --delete"))))
 
 (defun refine-comparison-with-diff ()
-  (if (equal dircmp-compare-content "ignore whitespace differences")
+  (if (equal (with-current-buffer comparison-view-buffer dircmp-compare-content) "ignore whitespace")
       (save-excursion
+        (get-buffer-create diff-output-buffer)
         (get-buffer-create diff-output-buffer)
         (set-buffer diff-output-buffer)
         (erase-buffer)
