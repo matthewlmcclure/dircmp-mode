@@ -39,7 +39,7 @@
 (define-key dircmp-mode-map "G" 'toggle-compare-group)
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
 (define-key dircmp-mode-map "d" 'toggle-preserve-devices-and-specials)
-(define-key dircmp-mode-map "g" 'recompare-dirs)
+(define-key dircmp-mode-map "g" 'recompare-directories)
 (define-key dircmp-mode-map "l" 'toggle-include-present-only-on-left)
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "o" 'toggle-compare-owner)
@@ -126,14 +126,14 @@
   (with-current-buffer comparison-view-buffer
     (set-variable 'dircmp-compare-content method)))
 
-(defun compare-dirs (dir1 dir2)
+(defun compare-directories (dir1 dir2)
   (interactive "DLeft directory: \nDRight directory: ")
   (get-buffer-create comparison-view-buffer)
   (set-buffer comparison-view-buffer)
   (dircmp-mode)
-  (recompare-dirs dir1 dir2))
+  (recompare-directories dir1 dir2))
 
-(defun recompare-dirs (&optional dir1 dir2)
+(defun recompare-directories (&optional dir1 dir2)
   (interactive)
   (get-buffer-create rsync-output-buffer)
   (set-buffer rsync-output-buffer)
@@ -261,7 +261,7 @@ Key:
                          (directory-file-name (left-on-current-view-line))
                          (file-name-directory (directory-file-name (right-on-current-view-line))))))
     (call-process-shell-command command))
-  (recompare-dirs))
+  (recompare-directories))
 
 (defun dircmp-do-sync-right-to-left ()
   (interactive)
@@ -269,7 +269,7 @@ Key:
                          (directory-file-name (right-on-current-view-line))
                          (file-name-directory (directory-file-name (left-on-current-view-line))))))
     (call-process-shell-command command))
-  (recompare-dirs))
+  (recompare-directories))
 
 (defun file-on-current-rsync-line ()
   (save-excursion
