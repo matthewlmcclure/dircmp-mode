@@ -254,7 +254,8 @@ Key:
          (buf-A (or (get-file-buffer file-A) (find-file-noselect file-A)))
          (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
     (add-hook 'ediff-mode-hook (lambda () (setq default-directory "/")))
-    (ediff-buffers buf-A buf-B)))
+    (ediff-buffers buf-A buf-B)
+    (add-hook 'ediff-quit-hook (lambda () (progn (switch-to-buffer comparison-view-buffer) (delete-other-windows))))))
 
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
