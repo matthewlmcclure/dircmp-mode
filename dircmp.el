@@ -26,11 +26,14 @@
 
 ;;; Code:
 
+(defvar rsync-comparison-width 9) ;; TODO: Vary.
+(defvar view-comparison-width 7) ;; TODO: Vary.
+
 (define-derived-mode dircmp-mode
   fundamental-mode "DirCmp"
   "Major mode for comparing and syncing two directories.
 \\{dircmp-mode-map}"
-  (setq goal-column 7))
+  (setq goal-column (+ view-comparison-width 2)))
 
 (define-key dircmp-mode-map "+" 'toggle-compare-recursively)
 (define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
@@ -53,7 +56,6 @@
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
-(defvar rsync-comparison-width 9) ;; TODO: Vary.
 (defcustom dircmp-show-equivalent nil "Show equivalent files")
 (make-variable-buffer-local 'dircmp-show-equivalent)
 (defun toggle-show-equivalent ()
@@ -285,7 +287,7 @@ Key:
 (defun comparison-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) (rsync-comparison-width))))) 
+    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) rsync-comparison-width)))) 
 
 (defun file-on-current-view-line ()
   (save-excursion
