@@ -53,6 +53,7 @@
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
+(defvar rsync-comparison-width 9) ;; TODO: Vary.
 (defcustom dircmp-show-equivalent nil "Show equivalent files")
 (make-variable-buffer-local 'dircmp-show-equivalent)
 (defun toggle-show-equivalent ()
@@ -273,20 +274,23 @@ Key:
     (call-process-shell-command command))
   (recompare-directories))
 
+(defun rsync-file-name-index ()
+  (+ rsync-comparison-width 1))
+
 (defun file-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (buffer-substring-no-properties (+ (line-beginning-position) 10) (line-end-position))))
+    (buffer-substring-no-properties (+ (line-beginning-position) (rsync-file-name-index)) (line-end-position))))
 
 (defun comparison-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) 9))))
+    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) (rsync-comparison-width))))) 
 
 (defun file-on-current-view-line ()
   (save-excursion
     (switch-to-buffer comparison-view-buffer)
-    (buffer-substring-no-properties (+ (line-beginning-position) 7) (line-end-position))))
+    (buffer-substring-no-properties (+ (line-beginning-position) 9) (line-end-position))))
 
 (defun left-on-current-rsync-line ()
   (save-excursion
@@ -312,7 +316,7 @@ Key:
   (progn
     (switch-to-buffer rsync-output-buffer)
     (goto-char (point-min))
-    (while (> (- (line-end-position) (line-beginning-position)) 10)
+    (while (> (- (line-end-position) (line-beginning-position)) (rsync-file-name-index))
       (let ((formatted-comparison (format-comparison (comparison-on-current-rsync-line)))
             (file (file-on-current-rsync-line)))
         (if (or
@@ -320,7 +324,7 @@ Key:
              (not (equivalent formatted-comparison)))
             (progn
               (switch-to-buffer comparison-view-buffer)
-              (insert (format "%6s %s\n" formatted-comparison file))
+              (insert (format "%8s %s\n" formatted-comparison file))
               (switch-to-buffer rsync-output-buffer)))
         (forward-line)))))
 
@@ -328,17 +332,23 @@ Key:
   (not (string-match "[a-z]" formatted-comparison)))
 
 (defun format-comparison (rsync-comparison)
-  (cond ((string-match "^\*deleting" rsync-comparison)
-         "r....")
-        ((string-equal ">f+++++++" rsync-comparison)
-         "l....")
-        ((string-equal "c" (substring rsync-comparison 0 1))
-         "l....")
-        ((or (string-equal "c" (substring rsync-comparison 2 3))
-             (string-equal "s" (substring rsync-comparison 3 4)))
-         (concat "c" (substring rsync-comparison 4 8)))
-        (t
-         (concat (substring rsync-comparison 2 3) (substring rsync-comparison 4 8)))
-        ))
+  (let ((rsync-comparison-padded
+         (mapconcat
+          (function (lambda (c) (format "%c" (if (equal ?\s c) ?\. c))))
+          (if (< (length rsync-comparison) view-comparison-width)
+              (format "%-9s" rsync-comparison)
+            rsync-comparison) "")))
+    (cond ((string-match "^\*deleting" (substring rsync-comparison-padded 0 8))
+           "r......")
+          ((string-equal ">f+++++++" (substring rsync-comparison-padded 0 8))
+           "l......")
+          ((string-equal "c" (substring rsync-comparison-padded 0 1))
+           "l......")
+          ((or (string-equal "c" (substring rsync-comparison-padded 2 3))
+               (string-equal "s" (substring rsync-comparison-padded 3 4)))
+           (concat "c" (substring rsync-comparison-padded 4)))
+          (t
+           (concat (substring rsync-comparison-padded 2 3) (substring rsync-comparison-padded 4)))
+          )))
 
 (provide 'dircmp-mode)
