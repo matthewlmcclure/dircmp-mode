@@ -152,26 +152,32 @@
     (update-comparison-view left-dir right-dir)))
 
 (defun compare-with-rsync (dir1 dir2)
-  (call-process-shell-command
-   (format "rsync %s '%s' '%s'" (rsync-comparison-options) dir1 dir2)
-   nil rsync-output-buffer))
+  (let ((args (append (list "rsync" nil rsync-output-buffer nil)
+		      (rsync-comparison-options)
+		      (list dir1 dir2))))
+    (apply 'call-process args)))
 
 (defun rsync-comparison-options ()
   (with-current-buffer comparison-view-buffer
-    (concat
-     "-ni"
-     (if (or dircmp-show-equivalent
-             (equal dircmp-compare-content "byte by byte")) "i")
-     (if dircmp-compare-recursively "r") 
-     (if (equal dircmp-compare-content "checksum") "c")
-     (if dircmp-preserve-symlinks "l")
-     (if dircmp-compare-permissions "p")
-     (if dircmp-compare-times "t")
-     (if dircmp-compare-group "g")
-     (if dircmp-compare-owner "o")
-     (if dircmp-preserve-devices-and-specials "D")
-     (if (not dircmp-include-present-only-on-left) " --existing")
-     (if dircmp-include-present-only-on-right " --delete"))))
+    (append
+     (list
+      (concat
+       "-ni"
+       (if (or dircmp-show-equivalent
+	       (equal dircmp-compare-content "byte by byte")) "i")
+       (if dircmp-compare-recursively "r") 
+       (if (equal dircmp-compare-content "checksum") "c")
+       (if dircmp-preserve-symlinks "l")
+       (if dircmp-compare-permissions "p")
+       (if dircmp-compare-times "t")
+       (if dircmp-compare-group "g")
+       (if dircmp-compare-owner "o")
+       (if dircmp-preserve-devices-and-specials "D")))
+     (if (not dircmp-include-present-only-on-left) (list "--existing"))
+     (if dircmp-include-present-only-on-right (list "--delete")))))
+
+(defun dircmp-line-number ()
+  (1+ (count-lines 1 (point))))
 
 (defun refine-comparison-byte-by-byte ()
   (if (equal (with-current-buffer comparison-view-buffer dircmp-compare-content) "byte by byte")
@@ -179,16 +185,15 @@
         (set-buffer rsync-output-buffer)
         (goto-char (point-min))
         (let ((lines (count-lines (point-min) (point-max))))
-          (while (<= (line-number-at-pos) lines)
+          (while (<= (dircmp-line-number) lines)
             (progn
               (if (and
                    (string-equal "f" (substring (comparison-on-current-rsync-line) 1 2))
                    (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
                    (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
                   (let ((equivalent
-                         (equal 0 (call-process-shell-command
-                                   (format "cmp -s '%s' '%s'"
-                                           (left-on-current-rsync-line) (right-on-current-rsync-line))))))
+                         (equal 0 (call-process
+                                   "cmp" nil nil nil "-s" (left-on-current-rsync-line) (right-on-current-rsync-line)))))
                     (if (not equivalent)
                         (progn
                           (goto-char (+ (line-beginning-position) 2))
@@ -206,15 +211,14 @@
         (set-buffer rsync-output-buffer)
         (goto-char (point-min))
         (let ((lines (count-lines (point-min) (point-max))))
-          (while (<= (line-number-at-pos) lines)
+          (while (<= (dircmp-line-number) lines)
             (if (or (string-equal "c" (substring (comparison-on-current-rsync-line) 2 3))
                     (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4)))
                 (progn
                   (set-buffer diff-output-buffer)
                   (erase-buffer)
-                  (call-process-shell-command
-                   (format "diff -q -s -w '%s' '%s'" (left-on-current-rsync-line) (right-on-current-rsync-line))
-                   nil diff-output-buffer)
+                  (call-process
+                   "diff" nil diff-output-buffer nil "-q" "-s" "-w" (left-on-current-rsync-line) (right-on-current-rsync-line))
                   (if (re-search-backward " are identical\n" nil t)
                       (progn
                         (set-buffer rsync-output-buffer)
@@ -231,7 +235,7 @@
   (set-buffer rsync-output-buffer)
   (let ((rsync-output (buffer-string)))
     (switch-to-buffer comparison-view-buffer)
-    (let ((line (line-number-at-pos)))
+    (let ((line (dircmp-line-number)))
       (set 'buffer-read-only nil)
       (erase-buffer)
       (insert (format "Directory comparison:\n\n Left: %s\nRight: %s\n\n" dir1 dir2))
@@ -263,18 +267,16 @@ Key:
 
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
-                         (directory-file-name (left-on-current-view-line))
-                         (file-name-directory (directory-file-name (right-on-current-view-line))))))
-    (call-process-shell-command command))
+  (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
+		  (directory-file-name (left-on-current-view-line))
+		  (file-name-directory (directory-file-name (right-on-current-view-line))))
   (recompare-directories))
 
 (defun dircmp-do-sync-right-to-left ()
   (interactive)
-  (let ((command (format "rsync -idlptgoD --delete '%s' '%s'"
-                         (directory-file-name (right-on-current-view-line))
-                         (file-name-directory (directory-file-name (left-on-current-view-line))))))
-    (call-process-shell-command command))
+  (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
+		(directory-file-name (right-on-current-view-line))
+		(file-name-directory (directory-file-name (left-on-current-view-line))))
   (recompare-directories))
 
 (defun rsync-file-name-index ()
@@ -337,7 +339,7 @@ Key:
 (defun format-comparison (rsync-comparison)
   (let ((padded-comparison
          (mapconcat
-          (function (lambda (c) (format "%c" (if (equal ?\s c) ?\. c))))
+          (function (lambda (c) (format "%c" (if (equal ?\  c) ?\. c))))
           (if (< (length rsync-comparison) rsync-comparison-extended-width)
               (format (format "%%-%ds" rsync-comparison-extended-width) rsync-comparison)
             rsync-comparison) "")))

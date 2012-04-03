@@ -3,5 +3,5 @@
 LOCAL="$1"
 REMOTE="$2"
 
- 
-emacs --eval="(progn (compare-directories \"$LOCAL\" \"$REMOTE\"))"
+rootdir="$(dirname "$BASH_SOURCE")"
+emacs --eval="(progn (setq debug-on-error t) (load-file \"$rootdir/dircmp.el\") (compare-directories \"$LOCAL\" \"$REMOTE\"))"
