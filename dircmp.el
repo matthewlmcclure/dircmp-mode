@@ -27,6 +27,7 @@
 ;;; Code:
 
 (defvar rsync-comparison-width 9) ;; TODO: Vary.
+(defvar rsync-comparison-extended-width 11)
 (defvar view-comparison-width 7) ;; TODO: Vary.
 
 (define-derived-mode dircmp-mode
@@ -334,23 +335,23 @@ Key:
   (not (string-match "[a-z]" formatted-comparison)))
 
 (defun format-comparison (rsync-comparison)
-  (let ((rsync-comparison-padded
+  (let ((padded-comparison
          (mapconcat
           (function (lambda (c) (format "%c" (if (equal ?\s c) ?\. c))))
-          (if (< (length rsync-comparison) view-comparison-width)
-              (format "%-9s" rsync-comparison)
+          (if (< (length rsync-comparison) rsync-comparison-extended-width)
+              (format (format "%%-%ds" rsync-comparison-extended-width) rsync-comparison)
             rsync-comparison) "")))
-    (cond ((string-match "^\*deleting" (substring rsync-comparison-padded 0 8))
+    (cond ((string-match "^\*deleting" (substring padded-comparison 0 8))
            "r......")
-          ((string-equal ">f+++++++" (substring rsync-comparison-padded 0 8))
+          ((string-equal ">f+++++++" (substring padded-comparison 0 8))
            "l......")
-          ((string-equal "c" (substring rsync-comparison-padded 0 1))
+          ((string-equal "c" (substring padded-comparison 0 1))
            "l......")
-          ((or (string-equal "c" (substring rsync-comparison-padded 2 3))
-               (string-equal "s" (substring rsync-comparison-padded 3 4)))
-           (concat "c" (substring rsync-comparison-padded 4)))
+          ((or (string-equal "c" (substring padded-comparison 2 3))
+               (string-equal "s" (substring padded-comparison 3 4)))
+           (concat "c" (substring padded-comparison 4 (- rsync-comparison-extended-width 1))))
           (t
-           (concat (substring rsync-comparison-padded 2 3) (substring rsync-comparison-padded 4)))
+           (concat (substring padded-comparison 2 3) (substring padded-comparison 4 (- rsync-comparison-extended-width 1))))
           )))
 
 (provide 'dircmp-mode)
