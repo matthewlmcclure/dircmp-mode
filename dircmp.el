@@ -36,12 +36,15 @@
 \\{dircmp-mode-map}"
   (setq goal-column (+ view-comparison-width 2)))
 
+(define-key dircmp-mode-map " " 'next-line)
 (define-key dircmp-mode-map "+" 'toggle-compare-recursively)
 (define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
 (define-key dircmp-mode-map "=" 'toggle-show-equivalent)
 (define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
 (define-key dircmp-mode-map "G" 'toggle-compare-group)
+(define-key dircmp-mode-map "\177" 'previous-line)
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
+(define-key dircmp-mode-map "c" 'set-compare-content)
 (define-key dircmp-mode-map "d" 'toggle-preserve-devices-and-specials)
 (define-key dircmp-mode-map "g" 'recompare-directories)
 (define-key dircmp-mode-map "l" 'toggle-include-present-only-on-left)
@@ -52,7 +55,6 @@
 (define-key dircmp-mode-map "r" 'toggle-include-present-only-on-right)
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
-(define-key dircmp-mode-map "c" 'set-compare-content)
 
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
