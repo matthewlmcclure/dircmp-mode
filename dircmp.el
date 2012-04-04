@@ -44,6 +44,7 @@
 (define-key dircmp-mode-map "G" 'toggle-compare-group)
 (define-key dircmp-mode-map "\177" 'previous-line)
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
+(define-key dircmp-mode-map "a" 'toggle-compare-acls)
 (define-key dircmp-mode-map "c" 'set-compare-content)
 (define-key dircmp-mode-map "d" 'toggle-preserve-devices-and-specials)
 (define-key dircmp-mode-map "g" 'recompare-directories)
@@ -55,6 +56,7 @@
 (define-key dircmp-mode-map "r" 'toggle-include-present-only-on-right)
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
+(define-key dircmp-mode-map "x" 'toggle-compare-extended-attributes)
 
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
@@ -83,6 +85,18 @@
   (interactive)
   (with-current-buffer comparison-view-buffer
     (set 'dircmp-compare-permissions (not dircmp-compare-permissions))))
+(defcustom dircmp-compare-acls nil "Compare ACLs")
+(make-variable-buffer-local 'dircmp-compare-acls)
+(defun toggle-compare-acls ()
+  (interactive)
+  (with-current-buffer comparison-view-buffer
+    (set 'dircmp-compare-acls (not dircmp-compare-acls))))
+(defcustom dircmp-compare-extended-attributes nil "Compare extended attributes")
+(make-variable-buffer-local 'dircmp-compare-extended-attributes)
+(defun toggle-compare-extended-attributes ()
+  (interactive)
+  (with-current-buffer comparison-view-buffer
+    (set 'dircmp-compare-extended-attributes (not dircmp-compare-extended-attributes))))
 (defcustom dircmp-compare-times t "Compare times")
 (make-variable-buffer-local 'dircmp-compare-times)
 (defun toggle-compare-times ()
@@ -155,8 +169,8 @@
 
 (defun compare-with-rsync (dir1 dir2)
   (let ((args (append (list "rsync" nil rsync-output-buffer nil)
-		      (rsync-comparison-options)
-		      (list dir1 dir2))))
+                      (rsync-comparison-options)
+                      (list dir1 dir2))))
     (apply 'call-process args)))
 
 (defun rsync-comparison-options ()
@@ -166,11 +180,13 @@
       (concat
        "-ni"
        (if (or dircmp-show-equivalent
-	       (equal dircmp-compare-content "byte by byte")) "i")
+               (equal dircmp-compare-content "byte by byte")) "i")
        (if dircmp-compare-recursively "r") 
        (if (equal dircmp-compare-content "checksum") "c")
        (if dircmp-preserve-symlinks "l")
        (if dircmp-compare-permissions "p")
+       (if dircmp-compare-acls "A")
+       (if dircmp-compare-extended-attributes "X")
        (if dircmp-compare-times "t")
        (if dircmp-compare-group "g")
        (if dircmp-compare-owner "o")
@@ -270,15 +286,15 @@ Key:
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
   (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
-		  (directory-file-name (left-on-current-view-line))
-		  (file-name-directory (directory-file-name (right-on-current-view-line))))
+                (directory-file-name (left-on-current-view-line))
+                (file-name-directory (directory-file-name (right-on-current-view-line))))
   (recompare-directories))
 
 (defun dircmp-do-sync-right-to-left ()
   (interactive)
   (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
-		(directory-file-name (right-on-current-view-line))
-		(file-name-directory (directory-file-name (left-on-current-view-line))))
+                (directory-file-name (right-on-current-view-line))
+                (file-name-directory (directory-file-name (left-on-current-view-line))))
   (recompare-directories))
 
 (defun rsync-file-name-index ()
