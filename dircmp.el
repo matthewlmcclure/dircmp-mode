@@ -194,7 +194,7 @@
      (if dircmp-include-present-only-on-right (list "--delete")))))
 
 (defun dircmp-line-number ()
-  (1+ (count-lines 1 (point))))
+  (1+ (count-lines 1 (line-beginning-position))))
 
 (defun refine-comparison-byte-by-byte ()
   (if (equal (with-current-buffer comparison-view-buffer dircmp-compare-content) "byte by byte")
