@@ -26,7 +26,6 @@
 
 ;;; Code:
 
-(defvar rsync-comparison-width 9) ;; TODO: Vary.
 (defvar rsync-comparison-extended-width 11)
 (defvar view-comparison-width 7) ;; TODO: Vary.
 
@@ -298,7 +297,12 @@ Key:
   (recompare-directories))
 
 (defun rsync-file-name-index ()
-  (+ rsync-comparison-width 1))
+  (with-current-buffer rsync-output-buffer
+    (goto-char (point-min))
+    (- (search-forward " ") (line-beginning-position))))
+
+(defun rsync-comparison-width ()
+  (- (rsync-file-name-index) 1))
 
 (defun file-on-current-rsync-line ()
   (save-excursion
@@ -308,7 +312,7 @@ Key:
 (defun comparison-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) rsync-comparison-width)))) 
+    (buffer-substring-no-properties (line-beginning-position) (+ (line-beginning-position) (rsync-comparison-width)))))
 
 (defun file-on-current-view-line ()
   (save-excursion
