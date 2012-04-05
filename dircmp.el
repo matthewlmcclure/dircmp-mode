@@ -23,6 +23,14 @@
 ;; Add to your Emacs startup file:
 ;;
 ;;    (load "/path/to/dircmp.el")
+;;
+;; Then:
+;;
+;;    M-x compare-directories RET dir1 RET dir2 RET
+;;
+;; The author uses dircmp-mode with git-diffall (https://github.com/thenigan/git-diffall) as follows:
+;;
+;;    git diffall -x /path/to/dircmp-mode/emacs-git-difftool.sh
 
 ;;; Code:
 
@@ -297,9 +305,10 @@ Key:
   (recompare-directories))
 
 (defun rsync-file-name-index ()
-  (with-current-buffer rsync-output-buffer
-    (goto-char (point-min))
-    (- (search-forward " ") (line-beginning-position))))
+  (save-excursion
+    (with-current-buffer rsync-output-buffer
+      (goto-char (point-min))
+      (- (search-forward " ") (line-beginning-position)))))
 
 (defun rsync-comparison-width ()
   (- (rsync-file-name-index) 1))
