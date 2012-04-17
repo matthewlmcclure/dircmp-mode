@@ -43,6 +43,7 @@
 \\{dircmp-mode-map}"
   (setq goal-column (+ view-comparison-width 2)))
 
+;; Sorted with M-x sort-lines
 (define-key dircmp-mode-map " " 'next-line)
 (define-key dircmp-mode-map "+" 'toggle-compare-recursively)
 (define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
@@ -65,6 +66,7 @@
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
 (define-key dircmp-mode-map "x" 'toggle-compare-extended-attributes)
+(define-key dircmp-mode-map [mouse-2] 'dircmp-mouse-do-ediff)
 
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
@@ -281,15 +283,31 @@ Key:
       (set 'buffer-read-only t)
       (goto-char (point-min)) (forward-line (- line 1)))))
 
-(defun dircmp-do-ediff ()
+(defun dircmp-do-ediff (&optional left right)
   (interactive)
-  (let* ((file-A (left-on-current-view-line))
-         (file-B (right-on-current-view-line))
+  (let* ((file-A (or left (left-on-current-view-line)))
+         (file-B (or right (right-on-current-view-line)))
          (buf-A (or (get-file-buffer file-A) (find-file-noselect file-A)))
          (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
     (add-hook 'ediff-mode-hook (lambda () (setq default-directory "/")))
     (ediff-buffers buf-A buf-B)
     (add-hook 'ediff-quit-hook (lambda () (progn (switch-to-buffer comparison-view-buffer) (delete-other-windows))) t)))
+
+(defun dircmp-mouse-do-ediff (event)
+  ;; Lifted from dired-mouse-find-file-other-window
+  (interactive "e")
+  (let (window pos left-file right-file)
+    (save-excursion
+      (setq window (posn-window (event-end event))
+            pos (posn-point (event-end event)))
+      (if (not (windowp window))
+          (error "No file chosen"))
+      (set-buffer (window-buffer window))
+      (message "%d" pos)
+      (goto-char pos)
+      (setq left-file (left-on-current-view-line))
+      (setq right-file (right-on-current-view-line)))
+    (dircmp-do-ediff left-file right-file)))
 
 (defun dircmp-do-sync-left-to-right ()
   (interactive)
