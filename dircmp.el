@@ -60,6 +60,7 @@
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "o" 'toggle-compare-owner)
 (define-key dircmp-mode-map "p" 'previous-line)
+(define-key dircmp-mode-map "q" 'dircmp-quit)
 (define-key dircmp-mode-map "r" 'toggle-include-present-only-on-right)
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
@@ -303,6 +304,14 @@ Key:
                 (directory-file-name (right-on-current-view-line))
                 (file-name-directory (directory-file-name (left-on-current-view-line))))
   (recompare-directories))
+
+(defun dircmp-quit ()
+  (interactive)
+  (if (yes-or-no-p "Quit directory comparison? ")
+      (progn
+        (kill-buffer (get-buffer-create rsync-output-buffer))
+        (kill-buffer (get-buffer-create diff-output-buffer))
+        (kill-buffer (get-buffer-create comparison-view-buffer)))))
 
 (defun rsync-file-name-index ()
   (save-excursion
