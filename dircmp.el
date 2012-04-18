@@ -125,6 +125,7 @@
 (define-key dircmp-mode-map [menu-bar dircmp dircmp-do-ediff]
   '("Ediff files" . dircmp-do-ediff))
 
+(defvar rsync-width-buffer " *dircmp-rsync-width*")
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
@@ -386,15 +387,27 @@ Key:
   (interactive)
   (if (y-or-n-p "Quit directory comparison? ")
       (progn
+        (kill-buffer (get-buffer-create rsync-width-buffer))
         (kill-buffer (get-buffer-create rsync-output-buffer))
         (kill-buffer (get-buffer-create diff-output-buffer))
         (kill-buffer (get-buffer-create comparison-view-buffer)))))
 
+(defvar computed-rsync-file-name-index nil)
+
 (defun rsync-file-name-index ()
-  (save-excursion
-    (with-current-buffer rsync-output-buffer
-      (goto-char (point-min))
-      (- (search-forward " ") (line-beginning-position)))))
+  (if computed-rsync-file-name-index
+      computed-rsync-file-name-index
+    (setq computed-rsync-file-name-index
+          (save-excursion
+            (with-current-buffer (get-buffer-create rsync-width-buffer)
+              (let ((file (make-temp-file "")))
+                (erase-buffer)
+                ;; `rsync -niiId . .` ; search for ./
+                (call-process "rsync" nil rsync-width-buffer nil "-nii" file file)
+                (delete-file file)
+                (goto-char (point-min))
+                (search-forward (file-name-nondirectory file))
+                (- (match-beginning 0) (line-beginning-position))))))))
 
 (defun rsync-comparison-width ()
   (- (rsync-file-name-index) 1))
