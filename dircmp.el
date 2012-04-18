@@ -464,7 +464,7 @@ Key:
         (forward-line)))))
 
 (defun equivalent (formatted-comparison)
-  (not (string-match "[a-z]" formatted-comparison)))
+  (not (string-match "[a-z0-9]" formatted-comparison)))
 
 (defun format-comparison (rsync-comparison)
   (let ((padded-comparison
