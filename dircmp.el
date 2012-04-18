@@ -68,6 +68,51 @@
 (define-key dircmp-mode-map "x" 'toggle-compare-extended-attributes)
 (define-key dircmp-mode-map [mouse-2] 'dircmp-mouse-do-ediff)
 
+(define-key dircmp-mode-map [menu-bar dircmp]
+  (cons "DirCmp" (make-sparse-keymap "DirCmp")))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-quit]
+  '("Quit DirCmp" . dircmp-quit))
+(define-key dircmp-mode-map [menu-bar dircmp separator-3]
+  '(menu-item "--"))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-preserve-devices-and-specials]
+  '("Preserve devices and special files" . toggle-preserve-devices-and-specials))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-preserve-symlinks]
+  '("Preserve symbolic links" . toggle-preserve-symlinks))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-extended-attributes]
+  '("Compare extended attributes" . toggle-compare-extended-attributes))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-acls]
+  '("Compare ACLs" . toggle-compare-acls))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-times]
+  '("Compare times" . toggle-compare-times))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-permissions]
+  '("Compare permissions" . toggle-compare-permissions))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-group]
+  '("Compare group" . toggle-compare-group))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-owner]
+  '("Compare owner" . toggle-compare-owner))
+(define-key dircmp-mode-map [menu-bar dircmp set-compare-content]
+  '("Compare content using..." . set-compare-content))
+(define-key dircmp-mode-map [menu-bar dircmp separator-2]
+  '(menu-item "--"))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-right]
+  '("Include files only present on right" . toggle-include-present-only-on-right))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-left]
+  '("Include files only present on left" . toggle-include-present-only-on-left))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-show-equivalent]
+  '("Show / hide equivalent files" . toggle-show-equivalent))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-compare-recursively]
+  '("Compare recursively" . toggle-compare-recursively))
+(define-key dircmp-mode-map [menu-bar dircmp separator-1]
+  '(menu-item "--"))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-right-to-left]
+  '("Sync from right to left" . dircmp-do-sync-right-to-left))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-left-to-right]
+  '("Sync from left to right" . dircmp-do-sync-left-to-right))
+(define-key dircmp-mode-map [menu-bar dircmp recompare-directories]
+  '("Recompare directories" . recompare-directories))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-ediff]
+  '("Ediff files" . dircmp-do-ediff))
+
 (defvar rsync-output-buffer " *dircmp-rsync-output*")
 (defvar diff-output-buffer " *dircmp-diff-output*")
 (defvar comparison-view-buffer "*DirCmp*")
