@@ -75,33 +75,45 @@
 (define-key dircmp-mode-map [menu-bar dircmp separator-3]
   '(menu-item "--"))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-preserve-devices-and-specials]
-  '("Preserve devices and special files" . toggle-preserve-devices-and-specials))
+  '(menu-item "Preserve devices and special files" toggle-preserve-devices-and-specials
+              :button (:toggle . dircmp-preserve-devices-and-specials)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-preserve-symlinks]
-  '("Preserve symbolic links" . toggle-preserve-symlinks))
+  '(menu-item "Preserve symbolic links" toggle-preserve-symlinks
+              :button (:toggle . dircmp-preserve-symlinks)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-extended-attributes]
-  '("Compare extended attributes" . toggle-compare-extended-attributes))
+  '(menu-item "Compare extended attributes" toggle-compare-extended-attributes
+              :button (:toggle . dircmp-compare-extended-attributes)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-acls]
-  '("Compare ACLs" . toggle-compare-acls))
+  '(menu-item "Compare ACLs" toggle-compare-acls
+              :button (:toggle . dircmp-compare-acls)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-times]
-  '("Compare times" . toggle-compare-times))
+  '(menu-item "Compare times" toggle-compare-times
+              :button (:toggle . dircmp-compare-times)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-permissions]
-  '("Compare permissions" . toggle-compare-permissions))
+  '(menu-item "Compare permissions" toggle-compare-permissions
+              :button (:toggle . dircmp-compare-permissions)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-group]
-  '("Compare group" . toggle-compare-group))
+  '(menu-item "Compare group" toggle-compare-group
+              :button (:toggle . dircmp-compare-group)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-owner]
-  '("Compare owner" . toggle-compare-owner))
+  '(menu-item "Compare owner" toggle-compare-owner
+              :button (:toggle . dircmp-compare-owner)))
 (define-key dircmp-mode-map [menu-bar dircmp set-compare-content]
   '("Compare content using..." . set-compare-content))
 (define-key dircmp-mode-map [menu-bar dircmp separator-2]
   '(menu-item "--"))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-right]
-  '("Include files only present on right" . toggle-include-present-only-on-right))
+  '(menu-item "Include files only present on right" toggle-include-present-only-on-right
+              :button (:toggle . dircmp-include-present-only-on-right)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-left]
-  '("Include files only present on left" . toggle-include-present-only-on-left))
+  '(menu-item "Include files only present on left" toggle-include-present-only-on-left
+              :button (:toggle . dircmp-include-present-only-on-left)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-show-equivalent]
-  '("Show / hide equivalent files" . toggle-show-equivalent))
+  '(menu-item "Show equivalent files" toggle-show-equivalent
+              :button (:toggle . dircmp-show-equivalent)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-compare-recursively]
-  '("Compare recursively" . toggle-compare-recursively))
+  '(menu-item "Compare recursively" toggle-compare-recursively
+              :button (:toggle . dircmp-compare-recursively)))
 (define-key dircmp-mode-map [menu-bar dircmp separator-1]
   '(menu-item "--"))
 (define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-right-to-left]
@@ -348,7 +360,6 @@ Key:
       (if (not (windowp window))
           (error "No file chosen"))
       (set-buffer (window-buffer window))
-      (message "%d" pos)
       (goto-char pos)
       (setq left-file (left-on-current-view-line))
       (setq right-file (right-on-current-view-line)))
@@ -428,7 +439,7 @@ Key:
       (let ((formatted-comparison (format-comparison (comparison-on-current-rsync-line)))
             (file (file-on-current-rsync-line)))
         (if (or
-             dircmp-show-equivalent
+             (with-current-buffer comparison-view-buffer dircmp-show-equivalent)
              (not (equivalent formatted-comparison)))
             (progn
               (switch-to-buffer comparison-view-buffer)
