@@ -46,9 +46,11 @@
 ;; Sorted with M-x sort-lines
 (define-key dircmp-mode-map " " 'next-line)
 (define-key dircmp-mode-map "+" 'toggle-compare-recursively)
-(define-key dircmp-mode-map "<" 'dircmp-do-sync-right-to-left)
+(define-key dircmp-mode-map "1" 'toggle-include-present-only-in-dir1)
+(define-key dircmp-mode-map "2" 'toggle-include-present-only-in-dir2)
+(define-key dircmp-mode-map "<" 'dircmp-do-sync-dir2-to-dir1)
 (define-key dircmp-mode-map "=" 'toggle-show-equivalent)
-(define-key dircmp-mode-map ">" 'dircmp-do-sync-left-to-right)
+(define-key dircmp-mode-map ">" 'dircmp-do-sync-dir1-to-dir2)
 (define-key dircmp-mode-map "G" 'toggle-compare-group)
 (define-key dircmp-mode-map "\177" 'previous-line)
 (define-key dircmp-mode-map "\C-m" 'dircmp-do-ediff)
@@ -56,13 +58,11 @@
 (define-key dircmp-mode-map "c" 'set-compare-content)
 (define-key dircmp-mode-map "d" 'toggle-preserve-devices-and-specials)
 (define-key dircmp-mode-map "g" 'recompare-directories)
-(define-key dircmp-mode-map "l" 'toggle-include-present-only-on-left)
 (define-key dircmp-mode-map "m" 'toggle-compare-permissions)
 (define-key dircmp-mode-map "n" 'next-line)
 (define-key dircmp-mode-map "o" 'toggle-compare-owner)
 (define-key dircmp-mode-map "p" 'previous-line)
 (define-key dircmp-mode-map "q" 'dircmp-quit)
-(define-key dircmp-mode-map "r" 'toggle-include-present-only-on-right)
 (define-key dircmp-mode-map "s" 'toggle-preserve-symlinks)
 (define-key dircmp-mode-map "t" 'toggle-compare-times)
 (define-key dircmp-mode-map "x" 'toggle-compare-extended-attributes)
@@ -102,12 +102,12 @@
   '("Compare content using..." . set-compare-content))
 (define-key dircmp-mode-map [menu-bar dircmp separator-2]
   '(menu-item "--"))
-(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-right]
-  '(menu-item "Include files only present on right" toggle-include-present-only-on-right
-              :button (:toggle . dircmp-include-present-only-on-right)))
-(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-on-left]
-  '(menu-item "Include files only present on left" toggle-include-present-only-on-left
-              :button (:toggle . dircmp-include-present-only-on-left)))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-in-dir2]
+  '(menu-item "Include files only present in dir2" toggle-include-present-only-in-dir2
+              :button (:toggle . dircmp-include-present-only-in-dir2)))
+(define-key dircmp-mode-map [menu-bar dircmp toggle-include-present-only-in-dir1]
+  '(menu-item "Include files only present in dir1" toggle-include-present-only-in-dir1
+              :button (:toggle . dircmp-include-present-only-in-dir1)))
 (define-key dircmp-mode-map [menu-bar dircmp toggle-show-equivalent]
   '(menu-item "Show equivalent files" toggle-show-equivalent
               :button (:toggle . dircmp-show-equivalent)))
@@ -116,10 +116,10 @@
               :button (:toggle . dircmp-compare-recursively)))
 (define-key dircmp-mode-map [menu-bar dircmp separator-1]
   '(menu-item "--"))
-(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-right-to-left]
-  '("Sync from right to left" . dircmp-do-sync-right-to-left))
-(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-left-to-right]
-  '("Sync from left to right" . dircmp-do-sync-left-to-right))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-dir2-to-dir1]
+  '("Sync from dir2 to dir1" . dircmp-do-sync-dir2-to-dir1))
+(define-key dircmp-mode-map [menu-bar dircmp dircmp-do-sync-dir1-to-dir2]
+  '("Sync from dir1 to dir2" . dircmp-do-sync-dir1-to-dir2))
 (define-key dircmp-mode-map [menu-bar dircmp recompare-directories]
   '("Recompare directories" . recompare-directories))
 (define-key dircmp-mode-map [menu-bar dircmp dircmp-do-ediff]
@@ -189,18 +189,18 @@
   (interactive)
   (with-current-buffer comparison-view-buffer
     (set 'dircmp-preserve-devices-and-specials (not dircmp-preserve-devices-and-specials))))
-(defcustom dircmp-include-present-only-on-left t "Include files only present on left in comparison view")
-(make-variable-buffer-local 'dircmp-include-present-only-on-left)
-(defun toggle-include-present-only-on-left ()
+(defcustom dircmp-include-present-only-in-dir1 t "Include files only present in dir1 in comparison view")
+(make-variable-buffer-local 'dircmp-include-present-only-in-dir1)
+(defun toggle-include-present-only-in-dir1 ()
   (interactive)
   (with-current-buffer comparison-view-buffer
-    (set 'dircmp-include-present-only-on-left (not dircmp-include-present-only-on-left))))
-(defcustom dircmp-include-present-only-on-right t "Include files only present on right in comparison view")
-(make-variable-buffer-local 'dircmp-include-present-only-on-right)
-(defun toggle-include-present-only-on-right ()
+    (set 'dircmp-include-present-only-in-dir1 (not dircmp-include-present-only-in-dir1))))
+(defcustom dircmp-include-present-only-in-dir2 t "Include files only present in dir2 in comparison view")
+(make-variable-buffer-local 'dircmp-include-present-only-in-dir2)
+(defun toggle-include-present-only-in-dir2 ()
   (interactive)
   (with-current-buffer comparison-view-buffer
-    (set 'dircmp-include-present-only-on-right (not dircmp-include-present-only-on-right))))
+    (set 'dircmp-include-present-only-in-dir2 (not dircmp-include-present-only-in-dir2))))
 (defcustom dircmp-compare-content "size" "Method for comparing file content"
   :type '(choice (const "size")
                  (const "checksum")
@@ -214,31 +214,31 @@
   (with-current-buffer comparison-view-buffer
     (set-variable 'dircmp-compare-content method)))
 
-(defun compare-directories (dir1 dir2)
-  (interactive "DLeft directory: \nDRight directory: ")
+(defun compare-directories (adir1 adir2)
+  (interactive "DDir1 directory: \nDDir2 directory: ")
   (get-buffer-create comparison-view-buffer)
   (set-buffer comparison-view-buffer)
   (dircmp-mode)
-  (recompare-directories dir1 dir2))
+  (recompare-directories adir1 adir2))
 
-(defun recompare-directories (&optional dir1 dir2)
+(defun recompare-directories (&optional adir1 adir2)
   (interactive)
   (get-buffer-create rsync-output-buffer)
   (set-buffer rsync-output-buffer)
   (erase-buffer)
-  (let ((normalized-dir1 (if dir1 (normalize-dir-string dir1) left-dir))
-        (normalized-dir2 (if dir2 (normalize-dir-string dir2) right-dir)))
-    (set (make-local-variable 'left-dir) normalized-dir1)
-    (set (make-local-variable 'right-dir) normalized-dir2)
-    (compare-with-rsync left-dir right-dir)
+  (let ((normalized-dir1 (if adir1 (normalize-dir-string adir1) dir1))
+        (normalized-dir2 (if adir2 (normalize-dir-string adir2) dir2)))
+    (set (make-local-variable 'dir1) normalized-dir1)
+    (set (make-local-variable 'dir2) normalized-dir2)
+    (compare-with-rsync dir1 dir2)
     (refine-comparison-byte-by-byte)
     (refine-comparison-with-diff)
-    (update-comparison-view left-dir right-dir)))
+    (update-comparison-view dir1 dir2)))
 
-(defun compare-with-rsync (dir1 dir2)
+(defun compare-with-rsync (adir1 adir2)
   (let ((args (append (list "rsync" nil rsync-output-buffer nil)
                       (rsync-comparison-options)
-                      (list dir1 dir2))))
+                      (list adir1 adir2))))
     (apply 'call-process args)))
 
 (defun rsync-comparison-options ()
@@ -259,8 +259,8 @@
        (if dircmp-compare-group "g")
        (if dircmp-compare-owner "o")
        (if dircmp-preserve-devices-and-specials "D")))
-     (if (not dircmp-include-present-only-on-left) (list "--existing"))
-     (if dircmp-include-present-only-on-right (list "--delete")))))
+     (if (not dircmp-include-present-only-in-dir1) (list "--existing"))
+     (if dircmp-include-present-only-in-dir2 (list "--delete")))))
 
 (defun dircmp-line-number ()
   (1+ (count-lines 1 (line-beginning-position))))
@@ -279,7 +279,7 @@
                    (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
                   (let ((equivalent
                          (equal 0 (call-process
-                                   "cmp" nil nil nil "-s" (left-on-current-rsync-line) (right-on-current-rsync-line)))))
+                                   "cmp" nil nil nil "-s" (path1-on-current-rsync-line) (path2-on-current-rsync-line)))))
                     (if (not equivalent)
                         (progn
                           (goto-char (+ (line-beginning-position) 2))
@@ -304,7 +304,7 @@
                   (set-buffer diff-output-buffer)
                   (erase-buffer)
                   (call-process
-                   "diff" nil diff-output-buffer nil "-q" "-s" "-w" (left-on-current-rsync-line) (right-on-current-rsync-line))
+                   "diff" nil diff-output-buffer nil "-q" "-s" "-w" (path1-on-current-rsync-line) (path2-on-current-rsync-line))
                   (if (re-search-backward " are identical\n" nil t)
                       (progn
                         (set-buffer rsync-output-buffer)
@@ -317,22 +317,22 @@
 (defun normalize-dir-string (dir)
   (file-name-as-directory (expand-file-name dir)))
 
-(defun update-comparison-view (dir1 dir2)
+(defun update-comparison-view (adir1 adir2)
   (set-buffer rsync-output-buffer)
   (let ((rsync-output (buffer-string)))
     (switch-to-buffer comparison-view-buffer)
     (let ((line (dircmp-line-number)))
       (set 'buffer-read-only nil)
       (erase-buffer)
-      (insert (format "Directory comparison:\n\n Left: %s\nRight: %s\n\n" dir1 dir2))
+      (insert (format "Directory comparison:\n\nDir1: %s\nDir2: %s\n\n" adir1 adir2))
       (format-rsync-output rsync-output)
       (switch-to-buffer comparison-view-buffer)
       (insert """
 Key:
     .: equivalent
     c: content differs
-    l: only present on left
-    r: only present on right
+    1: only present in dir1
+    2: only present in dir2
     t: timestamps differ
     p: permissions differ
     o: owner differs
@@ -344,10 +344,10 @@ Key:
       (forward-line (- line 1))
       (if (> (- (line-end-position) (line-beginning-position)) goal-column) (forward-char goal-column)))))
 
-(defun dircmp-do-ediff (&optional left right)
+(defun dircmp-do-ediff (&optional adir1 adir2)
   (interactive)
-  (let* ((file-A (or left (left-on-current-view-line)))
-         (file-B (or right (right-on-current-view-line)))
+  (let* ((file-A (or adir1 (path1-on-current-view-line)))
+         (file-B (or adir2 (path2-on-current-view-line)))
          (buf-A (or (get-file-buffer file-A) (find-file-noselect file-A)))
          (buf-B (or (get-file-buffer file-B) (find-file-noselect file-B))))
     (add-hook 'ediff-mode-hook (lambda () (setq default-directory "/")))
@@ -357,7 +357,7 @@ Key:
 (defun dircmp-mouse-do-ediff (event)
   ;; Lifted from dired-mouse-find-file-other-window
   (interactive "e")
-  (let (window pos left-file right-file)
+  (let (window pos dir1-file dir2-file)
     (save-excursion
       (setq window (posn-window (event-end event))
             pos (posn-point (event-end event)))
@@ -365,22 +365,22 @@ Key:
           (error "No file chosen"))
       (set-buffer (window-buffer window))
       (goto-char pos)
-      (setq left-file (left-on-current-view-line))
-      (setq right-file (right-on-current-view-line)))
-    (dircmp-do-ediff left-file right-file)))
+      (setq dir1-file (path1-on-current-view-line))
+      (setq dir2-file (path2-on-current-view-line)))
+    (dircmp-do-ediff dir1-file dir2-file)))
 
-(defun dircmp-do-sync-left-to-right ()
+(defun dircmp-do-sync-dir1-to-dir2 ()
   (interactive)
   (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
-                (directory-file-name (left-on-current-view-line))
-                (file-name-directory (directory-file-name (right-on-current-view-line))))
+                (directory-file-name (path1-on-current-view-line))
+                (file-name-directory (directory-file-name (path2-on-current-view-line))))
   (recompare-directories))
 
-(defun dircmp-do-sync-right-to-left ()
+(defun dircmp-do-sync-dir2-to-dir1 ()
   (interactive)
   (call-process "rsync" nil nil nil "-idlptgoD" "--delete"
-                (directory-file-name (right-on-current-view-line))
-                (file-name-directory (directory-file-name (left-on-current-view-line))))
+                (directory-file-name (path2-on-current-view-line))
+                (file-name-directory (directory-file-name (path1-on-current-view-line))))
   (recompare-directories))
 
 (defun dircmp-quit ()
@@ -427,25 +427,25 @@ Key:
     (switch-to-buffer comparison-view-buffer)
     (buffer-substring-no-properties (+ (line-beginning-position) 9) (line-end-position))))
 
-(defun left-on-current-rsync-line ()
+(defun path1-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (concat left-dir (file-on-current-rsync-line))))
+    (concat dir1 (file-on-current-rsync-line))))
 
-(defun right-on-current-rsync-line ()
+(defun path2-on-current-rsync-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (concat right-dir (file-on-current-rsync-line))))
+    (concat dir2 (file-on-current-rsync-line))))
 
-(defun left-on-current-view-line ()
+(defun path1-on-current-view-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (concat left-dir (file-on-current-view-line))))
+    (concat dir1 (file-on-current-view-line))))
 
-(defun right-on-current-view-line ()
+(defun path2-on-current-view-line ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (concat right-dir (file-on-current-view-line))))
+    (concat dir2 (file-on-current-view-line))))
 
 (defun format-rsync-output (rsync-output)
   (progn
@@ -474,11 +474,11 @@ Key:
               (format (format "%%-%ds" rsync-comparison-extended-width) rsync-comparison)
             rsync-comparison) "")))
     (cond ((string-equal "*deleting" (substring padded-comparison 0 9))
-           "r......")
+           "2......")
           ((string-equal ">f+++++++" (substring padded-comparison 0 9))
-           "l......")
+           "1......")
           ((string-equal "c" (substring padded-comparison 0 1))
-           "l......")
+           "1......")
           ((or (string-equal "c" (substring padded-comparison 2 3))
                (string-equal "s" (substring padded-comparison 3 4)))
            (concat "c" (substring padded-comparison 4 (- rsync-comparison-extended-width 1))))
