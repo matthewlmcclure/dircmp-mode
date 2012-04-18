@@ -325,7 +325,7 @@ Key:
 
 (defun dircmp-quit ()
   (interactive)
-  (if (yes-or-no-p "Quit directory comparison? ")
+  (if (y-or-n-p "Quit directory comparison? ")
       (progn
         (kill-buffer (get-buffer-create rsync-output-buffer))
         (kill-buffer (get-buffer-create diff-output-buffer))
