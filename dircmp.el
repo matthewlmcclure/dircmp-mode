@@ -338,7 +338,10 @@ Key:
     g: group differs
 """)
       (set 'buffer-read-only t)
-      (goto-char (point-min)) (forward-line (- line 1)))))
+      (set 'line (if (< line 6) 6 line))
+      (goto-char (point-min))
+      (forward-line (- line 1))
+      (if (> (- (line-end-position) (line-beginning-position)) goal-column) (forward-char goal-column)))))
 
 (defun dircmp-do-ediff (&optional left right)
   (interactive)
