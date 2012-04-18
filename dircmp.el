@@ -248,7 +248,7 @@
        "-ni"
        (if (or dircmp-show-equivalent
                (equal dircmp-compare-content "byte by byte")) "i")
-       (if dircmp-compare-recursively "r") 
+       (if dircmp-compare-recursively "r" "d") 
        (if (equal dircmp-compare-content "checksum") "c")
        (if dircmp-preserve-symlinks "l")
        (if dircmp-compare-permissions "p")
