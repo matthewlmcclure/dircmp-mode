@@ -1,8 +1,10 @@
-;;; dircmp-mode.el --- Compare and sync directories.
+;;; dircmp.el --- Compare and sync directories.
 
 ;; Copyright (C) 2012 Matt McClure
 
 ;; Author: Matt McClure -- http://matthewlmcclure.com
+;; URL: https://github.com/matthewlmcclure/dircmp-mode
+;; Version: 1
 ;; Keywords: unix, tools
 
 ;; dircmp-mode is free software: you can redistribute it and/or modify
@@ -487,3 +489,5 @@ Key:
           )))
 
 (provide 'dircmp-mode)
+
+;;; dircmp.el ends here
