@@ -279,9 +279,11 @@
           (while (<= (dircmp-line-number) lines)
             (progn
               (if
-                  ;; If file2 is a symlink, rsync reports it needs
-                  ;; overwriting regardless of its contents.
-                  (string-equal ">f+++++++" (substring (comparison-on-current-rsync-line) 0 9))
+                  (and
+                   (or (path1-symlink-p) (path2-symlink-p))
+                   ;; If file2 is a symlink, rsync reports it needs
+                   ;; overwriting regardless of its contents.
+                   (string-equal ">f+++++++" (substring (comparison-on-current-rsync-line) 0 9)))
                   (let ((equivalent
                          (equal 0 (call-process
                                    "cmp" nil nil nil "-s" (path1-on-current-rsync-line) (path2-on-current-rsync-line)))))
@@ -300,14 +302,10 @@
         (let ((lines (count-lines (point-min) (point-max))))
           (while (<= (dircmp-line-number) lines)
             (progn
-              (if (or
-                   (and
-                    (string-equal "f" (substring (comparison-on-current-rsync-line) 1 2))
-                    (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
-                    (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
-                   ;; If file2 is a symlink, rsync reports it needs
-                   ;; overwriting regardless of its contents.
-                   (string-equal ">f+++++++" (substring (comparison-on-current-rsync-line) 0 9)))
+              (if (and
+                   (string-equal "f" (substring (comparison-on-current-rsync-line) 1 2))
+                   (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
+                   (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
                   (let ((equivalent
                          (equal 0 (call-process
                                    "cmp" nil nil nil "-s" (path1-on-current-rsync-line) (path2-on-current-rsync-line)))))
@@ -330,10 +328,7 @@
         (let ((lines (count-lines (point-min) (point-max))))
           (while (<= (dircmp-line-number) lines)
             (if (or (string-equal "c" (substring (comparison-on-current-rsync-line) 2 3))
-                    (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4))
-                    ;; If file2 is a symlink, rsync reports it needs
-                    ;; overwriting regardless of its contents.
-                    (string-equal ">f+++++++" (substring (comparison-on-current-rsync-line) 0 9)))
+                    (string-equal "s" (substring (comparison-on-current-rsync-line) 3 4)))
                 (progn
                   (set-buffer diff-output-buffer)
                   (erase-buffer)
@@ -480,6 +475,16 @@ Key:
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
     (file-truename (concat dir2 (file-on-current-view-line)))))
+
+(defun path1-symlink-p ()
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (file-symlink-p (concat dir1 (file-on-current-view-line)))))
+
+(defun path2-symlink-p ()
+  (save-excursion
+    (switch-to-buffer rsync-output-buffer)
+    (file-symlink-p (concat dir2 (file-on-current-view-line)))))
 
 (defun format-rsync-output (rsync-output)
   (progn
