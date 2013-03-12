@@ -321,8 +321,13 @@
             (progn
               (if (and
                    (string-equal "f" (substring (comparison-on-current-rsync-line) 1 2))
-                   (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
-                   (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
+                   (or
+                    (and
+                     (string-equal "." (substring (comparison-on-current-rsync-line) 2 3))
+                     (string-equal "." (substring (comparison-on-current-rsync-line) 3 4)))
+                    (and
+                     (string-equal " " (substring (comparison-on-current-rsync-line) 2 3))
+                     (string-equal " " (substring (comparison-on-current-rsync-line) 3 4)))))
                   (let ((equivalent
                          (equal 0 (call-process
                                    "cmp" nil nil nil "-s" (path1-on-current-rsync-line) (path2-on-current-rsync-line)))))
@@ -496,12 +501,12 @@ Key:
 (defun path1-symlink-p ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (file-symlink-p (concat dir1 (file-on-current-view-line)))))
+    (file-symlink-p (concat dir1 (file-on-current-rsync-line)))))
 
 (defun path2-symlink-p ()
   (save-excursion
     (switch-to-buffer rsync-output-buffer)
-    (file-symlink-p (concat dir2 (file-on-current-view-line)))))
+    (file-symlink-p (concat dir2 (file-on-current-rsync-line)))))
 
 (defun format-rsync-output (rsync-output)
   (progn
