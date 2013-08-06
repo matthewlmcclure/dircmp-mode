@@ -37,11 +37,11 @@ master branch:
 
     $ git difftool -d $(git merge-base master HEAD)
 
-![dircmp-mode](./dircmp-mode.png)
+![dircmp-mode](./doc/img/dircmp-mode.png)
 
 Make changes, and save them from Ediff:
 
-![ediff](./ediff.png)
+![ediff](./doc/img/ediff.png)
 
 Emacs writes the changes directly to your working tree:
 
