@@ -451,7 +451,9 @@ Key:
     (setq computed-rsync-file-name-index
           (save-excursion
             (with-current-buffer (get-buffer-create rsync-width-buffer)
-              (let ((file (make-temp-file "")))
+              (let ((file
+                     (make-temp-file
+                      (expand-file-name "dircmp-" temporary-file-directory))))
                 (erase-buffer)
                 ;; `rsync -niiId . .` ; search for ./
                 (call-process "rsync" nil rsync-width-buffer nil "-nii" file file)
