@@ -4,7 +4,7 @@
 
 Add to your Emacs startup file:
 
-    (load "/path/to/dircmp.el")
+    (require 'dircmp)
 
 Then:
 

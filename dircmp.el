@@ -24,7 +24,7 @@
 
 ;; Add to your Emacs startup file:
 ;;
-;;     (load "/path/to/dircmp.el")
+;;     (require 'dircmp)
 ;;
 ;; Then:
 ;;
@@ -553,6 +553,6 @@ Key:
            (concat (substring padded-comparison 2 3) (substring padded-comparison 4 (- rsync-comparison-extended-width 1))))
           )))
 
-(provide 'dircmp-mode)
+(provide 'dircmp)
 
 ;;; dircmp.el ends here
