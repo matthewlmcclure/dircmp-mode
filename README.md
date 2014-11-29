@@ -1,5 +1,7 @@
 # dircmp-mode: Emacs directory comparison and sync mode
 
+[![Melpa Status](http://melpa.milkbox.net/packages/dircmp-badge.svg)](http://melpa.milkbox.net/#/dircmp)
+
 ## Installation and usage
 
 Add to your Emacs startup file:
